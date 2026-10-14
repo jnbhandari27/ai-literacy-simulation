@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Calibrate — AI Literacy Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1116;
+    --panel:#161B24;
+    --panel-raised:#1D2330;
+    --line:#2A3140;
+    --ink:#EDEEF2;
+    --ink-dim:#9AA2B1;
+    --gold:#E8B84B;
+    --teal:#5FD9CC;
+    --violet:#9B8CFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; margin:0 0 0.3em 0; letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .wrap{max-width:1000px; margin:0 auto; padding:0 24px;}
+
+  /* PROGRESS BAR (replaces score HUD — progress only, nothing is scored) */
+  .hud{
+    position:sticky; top:0; z-index:100;
+    background:rgba(14,17,22,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .hud .wrap{display:flex; align-items:center; gap:16px; padding:14px 24px;}
+  .hud-brand{font-size:1.5rem; width:44px; height:44px; border-radius:50%; background:var(--panel-raised); display:flex; align-items:center; justify-content:center; border:2px solid var(--teal); flex-shrink:0;}
+  .hud-mid{flex:1; min-width:0;}
+  .hud-labels{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--ink-dim); margin-bottom:5px;}
+  .track{height:6px; border-radius:5px; background:var(--panel-raised); overflow:hidden; border:1px solid var(--line);}
+  .fill{height:100%; width:0%; background:var(--teal); border-radius:5px; transition:width 0.5s ease;}
+
+  /* ACTIVITY MAP */
+  .questmap{padding:44px 0 12px;}
+  .questmap-row{display:flex; align-items:center; justify-content:space-between; max-width:640px; margin:0 auto; position:relative;}
+  .questmap-row::before{
+    content:""; position:absolute; top:26px; left:26px; right:26px; height:2px;
+    background:repeating-linear-gradient(90deg, var(--line) 0 8px, transparent 8px 14px); z-index:0;
+  }
+  .qnode{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; background:none; border:none; color:var(--ink-dim); font-family:'IBM Plex Sans',sans-serif;}
+  .qnode .circle{width:52px; height:52px; border-radius:50%; background:var(--panel); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:1.3rem; transition:all 0.3s;}
+  .qnode span.label{font-size:0.72rem; font-family:'IBM Plex Mono',monospace;}
+  .qnode.current .circle{border-color:var(--gold); box-shadow:0 0 0 5px rgba(232,184,75,0.15); background:var(--panel-raised);}
+  .qnode.done .circle{border-color:var(--teal); background:var(--teal); color:#0E1116;}
+  .qnode.locked{cursor:default; opacity:0.45;}
+
+  header.hero{padding:20px 0 56px; text-align:center;}
+  .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:0.78rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--teal); display:block; margin-bottom:14px;}
+  h1.title{font-size:2.6rem; max-width:680px; margin:0 auto; line-height:1.1;}
+  h1.title em{font-style:italic; color:var(--gold);}
+  .sub{font-size:1.05rem; color:var(--ink-dim); max-width:580px; margin:16px auto 0;}
+  .pill-row{display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:22px;}
+  .info-pill{font-family:'IBM Plex Mono',monospace; font-size:0.74rem; color:var(--ink-dim); border:1px solid var(--line); background:var(--panel); border-radius:20px; padding:6px 14px;}
+
+  section.level{padding:64px 0; border-bottom:1px solid var(--line); position:relative;}
+  .level-inner{position:relative;}
+  .level.locked .level-inner{filter:blur(3px); opacity:0.35; pointer-events:none; user-select:none;}
+  .lock-overlay{display:none; position:absolute; inset:0; align-items:center; justify-content:center; z-index:5; flex-direction:column; gap:10px; text-align:center;}
+  .level.locked .lock-overlay{display:flex;}
+  .lock-overlay .lockicon{font-size:2rem;}
+  .lock-overlay p{color:var(--ink-dim); font-family:'IBM Plex Mono',monospace; font-size:0.85rem; max-width:280px;}
+
+  .level-head{max-width:620px; margin-bottom:36px;}
+  .level-head .kicker{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em;}
+  .level-head h2{font-size:1.9rem; margin-top:10px;}
+  .level-head p{color:var(--ink-dim); margin-top:10px; font-size:0.98rem;}
+
+  .progress-dots{display:flex; gap:6px; margin-bottom:28px;}
+  .progress-dots .pdot{width:10px; height:10px; border-radius:50%; background:var(--line); transition:all 0.2s;}
+  .progress-dots .pdot.answered{background:var(--gold);}
+
+  .game-card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px; max-width:640px;}
+  .game-card .prompt{font-size:1.15rem; margin-bottom:24px; line-height:1.5;}
+  .game-card .prompt .label{display:block; font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; color:var(--ink-dim); margin-bottom:10px; letter-spacing:0.06em;}
+  .option-row{display:flex; gap:12px; flex-wrap:wrap;}
+  .opt-btn{
+    flex:1; min-width:140px; padding:16px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); font-size:0.98rem; cursor:pointer; transition:all 0.15s;
+    font-family:'IBM Plex Sans',sans-serif; font-weight:500;
+  }
+  .opt-btn:hover:not(:disabled){border-color:var(--teal); transform:translateY(-1px);}
+  .opt-btn:disabled{cursor:default;}
+  /* Neutral reveal styling — no green/red "correct/wrong" semantics */
+  .opt-btn.picked{border-color:var(--gold); background:rgba(232,184,75,0.10); color:var(--ink);}
+  .opt-btn.reveal{border-color:var(--teal); background:rgba(95,217,204,0.14); color:var(--teal);}
+  .feedback{margin-top:20px; padding-top:20px; border-top:1px solid var(--line); display:none;}
+  .feedback.show{display:block; animation:fadeUp 0.3s ease;}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .feedback .verdict{font-family:'IBM Plex Mono',monospace; font-size:0.82rem; margin-bottom:8px; font-weight:600; color:var(--gold);}
+  .feedback p{color:var(--ink-dim); font-size:0.92rem; margin:0 0 16px 0;}
+  .next-btn{
+    padding:11px 22px; border-radius:9px; border:none; background:var(--gold); color:#0E1116;
+    font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; font-size:0.92rem;
+  }
+
+  /* ACTIVITY 2 — worked cases */
+  .hidden{display:none;}
+  .case-wrap{max-width:780px;}
+  .case-card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:32px;}
+  .case-meta{font-family:'IBM Plex Mono',monospace; font-size:0.74rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold);}
+  .case-title{font-size:1.5rem; margin:8px 0 12px;}
+  .case-situation{margin:0; color:var(--ink); font-size:1rem;}
+  .ai-bubble{background:var(--panel-raised); border-left:3px solid var(--teal); border-radius:10px; padding:16px 18px; margin:20px 0 6px;}
+  .ai-tag{display:block; font-family:'IBM Plex Mono',monospace; font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--teal); margin-bottom:6px;}
+  .ai-bubble p{margin:0; font-size:0.98rem;}
+  .step{margin-top:26px; padding-top:22px; border-top:1px solid var(--line);}
+  .step-q{font-weight:600; font-size:1.02rem; margin:0 0 14px 0;}
+  .step-hint{display:block; font-weight:400; font-size:0.84rem; color:var(--ink-dim); margin-top:2px;}
+  .claim-list{display:grid; gap:10px; margin:0 0 16px;}
+  .claim{text-align:left; padding:13px 16px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); cursor:pointer; font-family:'IBM Plex Sans',sans-serif; font-size:0.95rem; transition:all .15s; width:100%;}
+  .claim:hover:not(:disabled){border-color:var(--teal);}
+  .claim.picked{border-color:var(--gold); background:rgba(232,184,75,0.10);}
+  .claim:disabled{cursor:default; opacity:1; color:var(--ink);}
+  .claim .ctag{display:block; margin-top:6px; font-family:'IBM Plex Mono',monospace; font-size:0.76rem; line-height:1.5;}
+  .claim.checkable.revealed{border-color:var(--teal); background:rgba(95,217,204,0.08);}
+  .claim.checkable .ctag{color:var(--teal);}
+  .claim.subjective.revealed{border-color:var(--violet); background:rgba(155,140,255,0.10);}
+  .claim.subjective .ctag{color:var(--violet);}
+  .claim .you{color:var(--gold);}
+  .insight{margin:0 0 18px 0; color:var(--ink-dim); font-size:0.93rem;}
+  .compare-head{margin:40px 0 16px; font-size:1.3rem;}
+  .compare{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .cmp-col{background:var(--panel); border:2px solid var(--line); border-radius:var(--radius); padding:22px;}
+  .cmp-col.util{border-color:rgba(95,217,204,0.5);}
+  .cmp-col.hedo{border-color:rgba(155,140,255,0.5);}
+  .cmp-col h4{margin:0 0 16px 0; font-family:'IBM Plex Mono',monospace; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em;}
+  .cmp-col.util h4{color:var(--teal);}
+  .cmp-col.hedo h4{color:var(--violet);}
+  .cmp-row{margin-bottom:14px;}
+  .cmp-row:last-child{margin-bottom:0;}
+  .cmp-row .k{display:block; font-family:'IBM Plex Mono',monospace; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); margin-bottom:2px;}
+  .cmp-row .v{font-size:0.92rem;}
+  .mix-note{color:var(--ink-dim); font-size:0.93rem; margin:20px 0 22px;}
+
+  /* COMPLETION */
+  #results{display:none; padding:70px 0 40px; text-align:center;}
+  #results.show{display:block;}
+  .done-icon{width:68px; height:68px; border-radius:50%; background:var(--teal); color:#0E1116; font-size:2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto 18px;}
+  #results h2{font-size:2.3rem;}
+  .done-sub{color:var(--ink-dim); max-width:520px; margin:8px auto 0;}
+  .takeaways{max-width:620px; margin:36px auto 0; text-align:left; display:grid; gap:12px;}
+  .takeaway{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; font-size:0.95rem; display:flex; gap:14px; align-items:flex-start;}
+  .takeaway .tn{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-size:0.85rem; padding-top:2px;}
+  .code-card{max-width:460px; margin:40px auto 0; background:var(--panel-raised); border:1px solid var(--gold); border-radius:var(--radius); padding:26px;}
+  .code-label{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--gold);}
+  .code-box{font-size:1.9rem; letter-spacing:0.08em; margin:12px 0 16px; color:var(--ink); user-select:all;}
+  .copy-btn{padding:11px 24px; border-radius:9px; border:none; background:var(--gold); color:#0E1116; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; font-size:0.92rem;}
+  .code-help{color:var(--ink-dim); font-size:0.88rem; margin:16px 0 0 0;}
+
+  footer{padding:36px 0; text-align:center;}
+  footer p{color:var(--ink-dim); font-size:0.82rem; margin:0 auto; max-width:620px;}
+
+  @media (max-width: 640px){
+    h1.title{font-size:1.9rem;}
+    .compare{grid-template-columns:1fr;}
+    .case-card{padding:22px;}
+    .hud .wrap{gap:12px;}
+    .questmap-row{padding:0 10px;}
+    .qnode .circle{width:42px; height:42px; font-size:1.05rem;}
+    .game-card{padding:22px;}
+    .code-box{font-size:1.5rem;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hud">
+  <div class="wrap">
+    <div class="hud-brand" aria-hidden="true">🧭</div>
+    <div class="hud-mid">
+      <div class="hud-labels"><span id="stepLabel">Activity 1 of 4</span><span>Not graded</span></div>
+      <div class="track"><div class="fill" id="progFill"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="questmap">
+  <div class="wrap questmap-row" id="questmap">
+    <button class="qnode current" data-target="lvl1" title="Activity 1"><div class="circle">👁️</div><span class="label">Spot</span></button>
+    <button class="qnode locked" data-target="lvl2" title="Activity 2"><div class="circle">🧭</div><span class="label">Cases</span></button>
+    <button class="qnode locked" data-target="lvl3" title="Activity 3"><div class="circle">⚖️</div><span class="label">Decide</span></button>
+    <button class="qnode locked" data-target="lvl4" title="Activity 4"><div class="circle">💡</div><span class="label">Myths</span></button>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">AI Literacy Simulation</span>
+    <h1 class="title">Four short activities. One skill: <em>calibrated trust.</em></h1>
+    <p class="sub">You'll practise telling AI-written content from human-written content, and decide when an AI's suggestion deserves a second look. This is a learning activity, not a test — there are no scores and no right or wrong answers. Go with your instinct; each step ends with a short explanation.</p>
+    <div class="pill-row">
+      <span class="info-pill">⏱ about 7 minutes</span>
+      <span class="info-pill">🚫 not graded</span>
+      <span class="info-pill">🔒 nothing you tap is stored</span>
+    </div>
+  </div>
+</header>
+
+<!-- ACTIVITY 1 -->
+<section class="level" id="lvl1">
+  <div class="wrap level-inner">
+    <div class="level-head">
+      <span class="kicker mono">Activity 1 · Awareness</span>
+      <h2>Spot the Machine</h2>
+      <p>Six messages. Was each one written by a human, or generated by AI? Make your best guess — then see what gave it away.</p>
+    </div>
+    <div class="progress-dots" id="dots-1"></div>
+    <div class="game-card" id="card-1" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ACTIVITY 2 -->
+<section class="level locked" id="lvl2">
+  <div class="wrap level-inner">
+    <div class="lock-overlay"><div class="lockicon">🔒</div><p>Finish Activity 1 to unlock this one.</p></div>
+    <div class="level-head">
+      <span class="kicker mono">Activity 2 · Understanding</span>
+      <h2>Two Cases, Two Kinds of Decisions</h2>
+      <p>Read each short case, decide what kind of decision it is, then see which parts of the AI's advice you could actually check yourself. Utilitarian decisions are about practical goals and facts; hedonic decisions are about taste, feeling and occasion. There's no penalty — every step ends with an explanation.</p>
+    </div>
+    <div class="case-wrap">
+      <div class="case-card" id="card-2" aria-live="polite"></div>
+      <div id="compare-2" class="hidden">
+        <h3 class="compare-head">Side by side</h3>
+        <div class="compare">
+          <div class="cmp-col util">
+            <h4>Utilitarian decisions</h4>
+            <div class="cmp-row"><span class="k">What you're after</span><span class="v">A practical goal with clear criteria — specs, price, time.</span></div>
+            <div class="cmp-row"><span class="k">Can you check the AI's advice?</span><span class="v">Mostly yes. The claims are facts you can look up in minutes.</span></div>
+            <div class="cmp-row"><span class="k">Who is the final judge?</span><span class="v">The facts.</span></div>
+            <div class="cmp-row"><span class="k">How to use the AI</span><span class="v">Let it shortlist quickly, then do a fast fact-check.</span></div>
+          </div>
+          <div class="cmp-col hedo">
+            <h4>Hedonic decisions</h4>
+            <div class="cmp-row"><span class="k">What you're after</span><span class="v">A feeling or experience — joy, warmth, meaning.</span></div>
+            <div class="cmp-row"><span class="k">Can you check the AI's advice?</span><span class="v">Only partly. The facts can be checked, but the part that matters most depends on taste and emotion.</span></div>
+            <div class="cmp-row"><span class="k">Who is the final judge?</span><span class="v">You — you know the people and the occasion.</span></div>
+            <div class="cmp-row"><span class="k">How to use the AI</span><span class="v">Take it as a source of ideas, then test them against what you know about the person and the moment.</span></div>
+          </div>
+        </div>
+        <p class="mix-note">Real decisions often mix both: a laptop can be exciting, and a dinner has a price. A good habit is to ask which part of the AI's advice you are relying on — the facts, or the feeling.</p>
+        <button class="next-btn" id="continue-2">Continue to Activity 3 →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ACTIVITY 3 -->
+<section class="level locked" id="lvl3">
+  <div class="wrap level-inner">
+    <div class="lock-overlay"><div class="lockicon">🔒</div><p>Finish Activity 2 to unlock this one.</p></div>
+    <div class="level-head">
+      <span class="kicker mono">Activity 3 · Verification</span>
+      <h2>Act or Check First?</h2>
+      <p>Five everyday scenarios. Would you act on the AI's suggestion right away, or check it first? Choose what you would actually do — then compare it with a useful rule of thumb.</p>
+    </div>
+    <div class="progress-dots" id="dots-3"></div>
+    <div class="game-card" id="card-3" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ACTIVITY 4 -->
+<section class="level locked" id="lvl4">
+  <div class="wrap level-inner">
+    <div class="lock-overlay"><div class="lockicon">🔒</div><p>Finish Activity 3 to unlock this one.</p></div>
+    <div class="level-head">
+      <span class="kicker mono">Activity 4 · Putting it together</span>
+      <h2>Myth or Fact?</h2>
+      <p>Five statements about what AI can and can't do. Pick one for each — then read the short explanation.</p>
+    </div>
+    <div class="progress-dots" id="dots-4"></div>
+    <div class="game-card" id="card-4" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <div class="done-icon" aria-hidden="true">✓</div>
+    <h2>Simulation complete</h2>
+    <p class="done-sub">Thank you. Nothing here was scored — this was a learning activity. Here are three things to keep in mind as you continue the survey:</p>
+    <div class="takeaways">
+      <div class="takeaway"><span class="tn">01</span><span>AI-generated text is often hard to tell apart from human writing, so instinct alone isn't a reliable guide.</span></div>
+      <div class="takeaway"><span class="tn">02</span><span>Utilitarian decisions (prices, specs, logistics) are easy to check; hedonic decisions (gifts, taste, occasions) depend on you, not on a fact an AI can look up.</span></div>
+      <div class="takeaway"><span class="tn">03</span><span>The more subjective or high-stakes a decision is, the more it pays to check an AI's suggestion before acting on it.</span></div>
+    </div>
+    <div class="code-card">
+      <div class="code-label">Your completion code</div>
+      <div class="code-box mono" id="codeBox"></div>
+      <button class="copy-btn" id="copyBtn">Copy code</button>
+      <p class="code-help">Go back to the survey tab and paste this code into the next question to continue.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Scenarios are informed by research on algorithm aversion and appreciation, the hedonic–utilitarian distinction, and AI-literacy scales. Calibrated trust — not blind trust or blind doubt — is the goal.</p>
+  </div>
+</footer>
+
+<script>
+/* ---------- CONFIG ----------
+   Change this code if you like, and update the Google Form's
+   response validation for the completion-code question to match. */
+const COMPLETION_CODE = 'CALIB-4729';
+const TOTAL_ACTIVITIES = 4;
+
+let doneCount = 0;
+
+function updateProgress(){
+  const label = doneCount >= TOTAL_ACTIVITIES ? 'Complete' : 'Activity ' + (doneCount + 1) + ' of ' + TOTAL_ACTIVITIES;
+  document.getElementById('stepLabel').textContent = label;
+  document.getElementById('progFill').style.width = (doneCount / TOTAL_ACTIVITIES * 100) + '%';
+}
+
+function unlockLevel(id){
+  document.getElementById(id).classList.remove('locked');
+  document.querySelectorAll('.qnode').forEach(n=>{
+    if(n.dataset.target===id) n.classList.remove('locked');
+  });
+}
+function markNode(id, cls){
+  document.querySelectorAll('.qnode').forEach(n=>{
+    if(n.dataset.target===id){ n.classList.remove('current'); n.classList.add(cls); }
+  });
+}
+function setCurrentNode(id){
+  document.querySelectorAll('.qnode').forEach(n=>{
+    if(n.dataset.target===id) n.classList.add('current');
+  });
+}
+function finishActivity(doneId, nextId){
+  doneCount++;
+  markNode(doneId, 'done');
+  updateProgress();
+  if(nextId){
+    unlockLevel(nextId);
+    setCurrentNode(nextId);
+    setTimeout(()=>document.getElementById(nextId).scrollIntoView({behavior:'smooth', block:'start'}), 300);
+  }
+}
+
+document.querySelectorAll('.qnode').forEach(n=>{
+  n.addEventListener('click', ()=>{
+    if(n.classList.contains('locked')) return;
+    document.getElementById(n.dataset.target).scrollIntoView({behavior:'smooth', block:'start'});
+  });
+});
+
+/* ---------- GENERIC SEQUENTIAL ACTIVITY (neutral reveal, no scoring) ---------- */
+function renderSequential(containerId, dotsId, items, onAllDone, cfg){
+  const container = document.getElementById(containerId);
+  const dotsEl = document.getElementById(dotsId);
+  let idx = 0;
+
+  dotsEl.innerHTML = items.map(()=>'<div class="pdot"></div>').join('');
+
+  function renderCard(){
+    const item = items[idx];
+    const isLast = idx === items.length - 1;
+    container.innerHTML = `
+      <div class="prompt"><span class="label">${item.kicker||'Scenario'}</span>${item.prompt}</div>
+      <div class="option-row">
+        ${item.options.map(o=>`<button class="opt-btn" data-val="${o.value}">${o.label}</button>`).join('')}
+      </div>
+      <div class="feedback" id="fb-${containerId}">
+        <div class="verdict" id="verdict-${containerId}"></div>
+        <p id="expl-${containerId}"></p>
+        <button class="next-btn" id="next-${containerId}">${isLast ? 'Finish activity →' : 'Next →'}</button>
+      </div>
+    `;
+    container.querySelectorAll('.opt-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const chosen = item.options.find(o=>o.value===btn.dataset.val);
+        const ref = item.options.find(o=>o.value===item.reference);
+        const same = chosen.value === ref.value;
+        container.querySelectorAll('.opt-btn').forEach(b=>{
+          b.disabled = true;
+          if(b.dataset.val === ref.value) b.classList.add('reveal');
+          else if(b === btn) b.classList.add('picked');
+        });
+        document.getElementById(`verdict-${containerId}`).textContent = cfg.verdict(ref);
+        document.getElementById(`expl-${containerId}`).textContent =
+          item.explanation + (same ? '' : ' ' + cfg.nudge);
+        document.getElementById(`fb-${containerId}`).classList.add('show');
+        dotsEl.children[idx].classList.add('answered');
+        document.getElementById(`next-${containerId}`).addEventListener('click', ()=>{
+          idx++;
+          if(idx < items.length) renderCard();
+          else onAllDone();
+        }, {once:true});
+      }, {once:true});
+    });
+  }
+  renderCard();
+}
+
+/* ---------- ACTIVITY 1 DATA ---------- */
+const HUMAN = {label:'🧑 Human', value:'human'}, AI = {label:'🤖 AI', value:'ai'};
+const level1Items = [
+  {prompt:"“Your cart has 3 items ready for checkout — complete your order in 2 clicks.”", options:[HUMAN,AI], reference:'ai', explanation:"Automated cart nudges are generated by recommendation systems, not a person watching your cart."},
+  {prompt:"“lol i can't believe you actually tried that recipe, how'd it turn out?”", options:[HUMAN,AI], reference:'human', explanation:"Specific shared history (a recipe you both know about) is a strong human signal — AI has no memory of a real shared moment unless told."},
+  {prompt:"“Great question! Let me break this down step by step for you 😊”", options:[HUMAN,AI], reference:'ai', explanation:"This upbeat, structured, step-by-step framing is a classic AI-assistant pattern."},
+  {prompt:"“I stayed up last night thinking about what you said. Are you doing okay?”", options:[HUMAN,AI], reference:'human', explanation:"Genuine follow-through on a real prior conversation — this reflects actual memory of a relationship, not a generated response."},
+  {prompt:"“Customers who bought this also bought: wireless earbuds, phone case, screen protector.”", options:[HUMAN,AI], reference:'ai', explanation:"Classic collaborative-filtering recommendation output — pattern-matched from purchase data."},
+  {prompt:"“Ugh, Monday again. Coffee's not hitting the same today.”", options:[HUMAN,AI], reference:'human', explanation:"Mundane, unprompted venting about a personal daily feeling — low incentive for a system to generate this unprompted."}
+];
+
+/* ---------- ACTIVITY 3 DATA ---------- */
+const ACT = {label:'✅ Act on it', value:'act'}, CHECK = {label:'🔍 Check it first', value:'check'};
+const level3Items = [
+  {kicker:'Scenario', prompt:"AI says this exact laptop model is ₹12,000 cheaper on another site.", options:[ACT,CHECK], reference:'act', explanation:"Fully verifiable and low in emotional stake — one click confirms it, so acting directly is efficient."},
+  {kicker:'Scenario', prompt:"AI suggests: 'Write a heartfelt anniversary message for your spouse.'", options:[ACT,CHECK], reference:'check', explanation:"Hedonic and personal — the AI doesn't know your relationship's real texture. Use it as a draft and personalise it before sending."},
+  {kicker:'Scenario', prompt:"AI flags a transaction on your card as 'likely fraud.'", options:[ACT,CHECK], reference:'check', explanation:"High stakes, and the action can be hard to undo — check your statement and the merchant before disputing or blocking."},
+  {kicker:'Scenario', prompt:"AI recommends the fastest driving route home based on live traffic.", options:[ACT,CHECK], reference:'act', explanation:"Objective, data-driven, and low downside if slightly off. This is exactly what these systems are built for."},
+  {kicker:'Scenario', prompt:"AI recommends a stock to invest your savings in.", options:[ACT,CHECK], reference:'check', explanation:"High stakes, hard to reverse, and outside what a language model can reliably know about future markets. Check with a qualified advisor."}
+];
+
+/* ---------- ACTIVITY 4 DATA ---------- */
+const FACT = {label:'Fact', value:'fact'}, MYTH = {label:'Myth', value:'myth'};
+const level4Items = [
+  {kicker:'Myth or Fact', prompt:"Generative AI actually 'feels' happy when it writes a cheerful message.", options:[FACT,MYTH], reference:'myth', explanation:"It reproduces the pattern of a cheerful tone from its training data — there's no underlying emotion."},
+  {kicker:'Myth or Fact', prompt:"AI recommendations for objective facts (prices, specs) are generally more reliable than for personal taste.", options:[FACT,MYTH], reference:'fact', explanation:"This is a core idea behind algorithm aversion research: trust is easier to earn in utilitarian tasks and more contested in hedonic ones."},
+  {kicker:'Myth or Fact', prompt:"Labelling content as 'AI-generated' can lower how much people value it, even when the content is identical.", options:[FACT,MYTH], reference:'fact', explanation:"Sometimes called the 'algorithm discount' — people may discount perceived effort and authenticity once AI authorship is disclosed."},
+  {kicker:'Myth or Fact', prompt:"The more 'AI literate' someone is, the more they trust AI in absolutely every situation.", options:[FACT,MYTH], reference:'myth', explanation:"Literacy calibrates trust — it can go up for verifiable tasks and down for tasks that need real empathy, rather than rising everywhere."},
+  {kicker:'Myth or Fact', prompt:"It's always obvious when a message was written by AI rather than a human.", options:[FACT,MYTH], reference:'myth', explanation:"As Activity 1 may have shown, it's often genuinely hard to tell — which is exactly why literacy matters more than instinct."}
+];
+
+/* ---------- ACTIVITY 2: worked cases ---------- */
+const TYPE_LABEL = {utilitarian:'Utilitarian', hedonic:'Hedonic'};
+const cases = [
+  {
+    title:"Meera's work laptop",
+    type:'utilitarian',
+    situation:"Meera starts a new job next month and needs a laptop for spreadsheets and video calls. Her budget is ₹55,000, she wants at least 16 GB of RAM, and the battery has to last a full workday. She asks an AI shopping assistant for help.",
+    ai:"The Aero 14 is your best fit. It has 16 GB RAM and a 512 GB SSD, costs ₹52,990 (under your budget), gives about 9 hours of battery life, and comes with a 2-year warranty.",
+    typeExplain:"Meera is solving a practical problem against clear criteria — RAM, battery, budget. There's no 'right feeling' involved, just requirements that either are or aren't met. That makes it a utilitarian decision.",
+    insight:"Every claim here can be checked in a few minutes, so verifying is cheap and a mistake is easy to catch. This is where AI advice is at its strongest.",
+    claims:[
+      {text:"16 GB RAM and a 512 GB SSD", kind:'checkable', why:"it's printed on the manufacturer's spec sheet."},
+      {text:"Costs ₹52,990", kind:'checkable', why:"retailer websites show the price in seconds."},
+      {text:"About 9 hours of battery life", kind:'checkable', why:"independent reviews test and publish this."},
+      {text:"A 2-year warranty", kind:'checkable', why:"it's stated in the warranty terms."}
+    ]
+  },
+  {
+    title:"Karan's parents' 30th anniversary",
+    type:'hedonic',
+    situation:"Karan wants to plan a dinner for his parents' 30th wedding anniversary. He isn't hunting for the cheapest or fastest option — he wants an evening that feels warm and memorable and suits his parents' taste. He asks an AI assistant for an idea.",
+    ai:"Book the rooftop at Saffron Terrace. You'll get a sunset table for four and a 4-course tasting menu at ₹2,800 per person, with a live ghazal evening on Fridays. It will feel like a special, unforgettable night, and your parents will love it.",
+    typeExplain:"Karan isn't solving a problem; he's after a feeling — warmth, memory, the right atmosphere for two particular people. That makes it a hedonic decision.",
+    insight:"The facts (seating, price, music) are checkable, but the part that matters most — whether it will feel special to his parents — can't be confirmed from a spec sheet. A confident tone like 'they will love it' isn't evidence. Use the AI for ideas; the final judgement is Karan's.",
+    claims:[
+      {text:"A sunset rooftop table for four", kind:'checkable', why:"the restaurant can confirm seating and availability."},
+      {text:"A 4-course tasting menu at ₹2,800 per person", kind:'checkable', why:"it's listed on the menu."},
+      {text:"A live ghazal evening on Fridays", kind:'checkable', why:"the restaurant's events page says so."},
+      {text:"It will feel like a special, unforgettable night", kind:'subjective', why:"'special' depends on how the evening feels to the people there."},
+      {text:"Your parents will love it", kind:'subjective', why:"only Karan knows his parents' taste — an AI can't."}
+    ]
+  }
+];
+
+function initActivity2(){
+  const card = document.getElementById('card-2');
+  let idx = 0;
+
+  function renderCase(){
+    const c = cases[idx];
+    const isLast = idx === cases.length - 1;
+    card.innerHTML = `
+      <div class="case-meta">Case ${idx + 1} of ${cases.length}</div>
+      <h3 class="case-title">${c.title}</h3>
+      <p class="case-situation">${c.situation}</p>
+      <div class="ai-bubble"><span class="ai-tag">🤖 The AI assistant suggests</span><p>“${c.ai}”</p></div>
+
+      <div class="step" id="step-type">
+        <p class="step-q">1 · What kind of decision is this?</p>
+        <div class="option-row">
+          <button class="opt-btn type-btn" data-val="utilitarian">Utilitarian<br><small>practical goal, facts</small></button>
+          <button class="opt-btn type-btn" data-val="hedonic">Hedonic<br><small>taste, feeling, occasion</small></button>
+        </div>
+        <div class="feedback" id="fb-type">
+          <div class="verdict" id="verdict-type"></div>
+          <p id="expl-type"></p>
+        </div>
+      </div>
+
+      <div class="step hidden" id="step-claims">
+        <p class="step-q">2 · Which parts of the AI's advice could you check yourself?<span class="step-hint">Tap every part you could verify, or none — then press “Show me”.</span></p>
+        <div class="claim-list">
+          ${c.claims.map((cl,i)=>`<button class="claim" data-i="${i}" aria-pressed="false">${cl.text}</button>`).join('')}
+        </div>
+        <button class="next-btn" id="show-claims">Show me →</button>
+        <div class="feedback" id="fb-claims">
+          <p class="insight">${c.insight}</p>
+          <button class="next-btn" id="next-case">${isLast ? 'See the side-by-side →' : 'Next case →'}</button>
+        </div>
+      </div>
+    `;
+
+    const typeBtns = card.querySelectorAll('.type-btn');
+    typeBtns.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const chosen = btn.dataset.val;
+        typeBtns.forEach(b=>{
+          b.disabled = true;
+          if(b.dataset.val === c.type) b.classList.add('reveal');
+          else if(b === btn) b.classList.add('picked');
+        });
+        card.querySelector('#verdict-type').textContent = chosen === c.type
+          ? `Mostly ${TYPE_LABEL[c.type]}`
+          : `You said ${TYPE_LABEL[chosen]} — most researchers would call this mainly ${TYPE_LABEL[c.type]}`;
+        card.querySelector('#expl-type').textContent = c.typeExplain;
+        card.querySelector('#fb-type').classList.add('show');
+        const step2 = card.querySelector('#step-claims');
+        step2.classList.remove('hidden');
+        setTimeout(()=>step2.scrollIntoView({behavior:'smooth', block:'nearest'}), 150);
+      }, {once:true});
+    });
+
+    card.querySelectorAll('.claim').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const on = b.classList.toggle('picked');
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    });
+
+    card.querySelector('#show-claims').addEventListener('click', ()=>{
+      card.querySelectorAll('.claim').forEach((b,i)=>{
+        const cl = c.claims[i];
+        const tapped = b.classList.contains('picked');
+        b.disabled = true;
+        b.classList.add('revealed', cl.kind);
+        const tag = document.createElement('span');
+        tag.className = 'ctag';
+        tag.innerHTML = (cl.kind === 'checkable' ? '✓ You could check this — ' : '◐ Only you can judge this — ') + cl.why +
+                        (tapped ? ' <span class="you">· you tapped this</span>' : '');
+        b.appendChild(tag);
+      });
+      card.querySelector('#show-claims').classList.add('hidden');
+      const fb = card.querySelector('#fb-claims');
+      fb.classList.add('show');
+      setTimeout(()=>fb.scrollIntoView({behavior:'smooth', block:'nearest'}), 150);
+    }, {once:true});
+
+    card.querySelector('#next-case').addEventListener('click', ()=>{
+      if(!isLast){
+        idx++;
+        renderCase();
+        card.scrollIntoView({behavior:'smooth', block:'start'});
+      } else {
+        card.querySelector('#next-case').classList.add('hidden');
+        const cmp = document.getElementById('compare-2');
+        cmp.classList.remove('hidden');
+        setTimeout(()=>cmp.scrollIntoView({behavior:'smooth', block:'start'}), 150);
+      }
+    });
+  }
+
+  renderCase();
+  document.getElementById('continue-2').addEventListener('click', ()=>finishActivity('lvl2','lvl3'), {once:true});
+}
+
+/* ---------- ACTIVITY COMPLETION HOOKS ---------- */
+function completeLevel1(){ finishActivity('lvl1','lvl2'); initActivity2(); }
+function completeLevel3(){
+  finishActivity('lvl3','lvl4');
+  renderSequential('card-4','dots-4', level4Items, completeLevel4, cfg4);
+}
+function completeLevel4(){
+  finishActivity('lvl4', null);
+  showResults();
+}
+
+function showResults(){
+  document.getElementById('codeBox').textContent = COMPLETION_CODE;
+  const res = document.getElementById('results');
+  res.classList.add('show');
+  setTimeout(()=>res.scrollIntoView({behavior:'smooth', block:'start'}), 200);
+}
+
+document.getElementById('copyBtn').addEventListener('click', ()=>{
+  const btn = document.getElementById('copyBtn');
+  const done = ()=>{ btn.textContent = 'Copied ✓'; setTimeout(()=>btn.textContent='Copy code', 2200); };
+  try{
+    navigator.clipboard.writeText(COMPLETION_CODE).then(done, ()=>{ selectCode(); });
+  }catch(e){ selectCode(); }
+  function selectCode(){
+    const r = document.createRange(); r.selectNodeContents(document.getElementById('codeBox'));
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    btn.textContent = 'Press Ctrl/Cmd + C';
+  }
+});
+
+/* ---------- ACTIVITY-SPECIFIC REVEAL COPY ---------- */
+const cfg1 = {
+  verdict: ref => `Revealed: this one was written by ${ref.label}`,
+  nudge: "It's a genuinely hard call — people often guess differently."
+};
+const cfg3 = {
+  verdict: ref => `A useful rule of thumb: ${ref.label}`,
+  nudge: "Reasonable people differ here — the point is to notice which signals (stakes, subjectivity, how easy it is to check) push you one way or the other."
+};
+const cfg4 = {
+  verdict: ref => `Verdict: ${ref.label}`,
+  nudge: "A common assumption — many people guess differently."
+};
+
+/* ---------- INIT ---------- */
+updateProgress();
+renderSequential('card-1','dots-1', level1Items, completeLevel1, cfg1);
+renderSequential('card-3','dots-3', level3Items, completeLevel3, cfg3);
+</script>
+
+</body>
+</html>
