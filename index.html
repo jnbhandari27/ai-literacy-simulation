@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Calibrate — AI Literacy Simulation</title>
+<title>Consumer Decisions and AI Recommendations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -167,7 +167,9 @@
     h1.title{font-size:1.9rem;}
     .compare{grid-template-columns:1fr;}
     .case-card{padding:22px;}
-    .hud .wrap{gap:12px;}
+    .hud .wrap{gap:12px; padding:12px 16px;}
+    #hudRight{display:none;}
+    #stepLabel{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
     .questmap-row{padding:0 10px;}
     .qnode .circle{width:42px; height:42px; font-size:1.05rem;}
     .game-card{padding:22px;}
@@ -175,6 +177,63 @@
   }
   @media (prefers-reduced-motion: reduce){
     *{animation:none !important; transition:none !important;}
+  }
+
+  /* ===== STUDY FLOW: intro, about-you, questions, done ===== */
+  :root{--warn:#E8735F;}
+  .panel{max-width:780px; margin:0 auto; padding:56px 24px 48px;}
+  .panel h1.title{margin:10px 0 0; text-align:left; max-width:none;}
+  .panel .sub{margin:16px 0 0; max-width:none;}
+  .panel .pill-row{justify-content:flex-start; margin:20px 0 28px;}
+  .panel-title{font-size:1.7rem; margin:10px 0 18px;}
+  .form-card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:26px 28px; margin:0 0 20px;}
+  .block-title{font-size:1.15rem; margin:0 0 8px;}
+  .q{margin:0 0 26px; border-left:3px solid transparent;}
+  .q:last-child{margin-bottom:0;}
+  .q.missing{border-left-color:var(--warn); padding-left:12px;}
+  .q-err{display:none; color:var(--warn); font-size:.82rem; margin:8px 0 0; font-family:'IBM Plex Mono',monospace;}
+  .q.missing .q-err{display:block;}
+  .q-label{font-weight:600; margin:0 0 12px;}
+  .lk-stmt{margin:0 0 10px; font-size:.98rem;}
+  .choices{display:flex; flex-wrap:wrap; gap:8px;}
+  .choice{position:relative; cursor:pointer;}
+  .choice input{position:absolute; opacity:0; inset:0; width:100%; height:100%; margin:0; cursor:pointer;}
+  .choice span{display:inline-block; padding:10px 16px; border:1px solid var(--line); border-radius:20px; background:var(--bg); font-size:.92rem; transition:all .15s;}
+  .choice:hover span{border-color:var(--teal);}
+  .choice input:checked + span{border-color:var(--gold); background:rgba(232,184,75,.12);}
+  .choice input:focus-visible + span{outline:2px solid var(--teal); outline-offset:2px;}
+  .choices.stack{flex-direction:column; align-items:stretch;}
+  .choices.stack .choice span{display:block; border-radius:12px;}
+  .lk-scale{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .lk{position:relative; cursor:pointer;}
+  .lk input{position:absolute; opacity:0; inset:0; width:100%; height:100%; margin:0; cursor:pointer;}
+  .lk span{display:flex; align-items:center; justify-content:center; height:42px; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-family:'IBM Plex Mono',monospace; font-size:.9rem; transition:all .15s;}
+  .lk:hover span{border-color:var(--teal);}
+  .lk input:checked + span{background:var(--gold); border-color:var(--gold); color:#0E1116; font-weight:600;}
+  .lk input:focus-visible + span{outline:2px solid var(--teal); outline-offset:2px;}
+  .lk-ends{display:flex; justify-content:space-between; gap:12px; margin-top:6px; font-size:.78rem; color:var(--ink-dim); font-family:'IBM Plex Mono',monospace;}
+  .lk-legend{position:sticky; top:73px; z-index:4; background:var(--panel); padding:8px 0 10px; margin:0 0 16px; font-family:'IBM Plex Mono',monospace; font-size:.74rem; color:var(--ink-dim); border-bottom:1px solid var(--line);}
+  .txt{width:100%; background:var(--bg); color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-family:inherit; font-size:.95rem; resize:vertical;}
+  .txt:focus{outline:2px solid var(--teal); border-color:transparent;}
+  .form-err{color:var(--warn); font-size:.88rem; margin:0 0 12px; display:none;}
+  .form-err.show{display:block;}
+  .reveal-banner{background:rgba(95,217,204,.10); border:1px solid var(--teal); border-radius:12px; padding:14px 18px; margin:0 0 20px; font-size:.95rem;}
+  .ai-bubble.neutral{border-left-color:var(--gold);}
+  .ai-bubble.neutral .ai-tag{color:var(--gold);}
+  .consent-row{display:flex; gap:12px; align-items:flex-start; cursor:pointer; font-size:.95rem;}
+  .consent-row input{margin-top:5px; width:18px; height:18px; accent-color:var(--gold); flex-shrink:0;}
+  .researcher{color:var(--ink-dim); font-size:.8rem; font-family:'IBM Plex Mono',monospace; margin:16px 0 0;}
+  #st-done{text-align:center;}
+  .status-box{max-width:560px; margin:28px auto 0; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:.92rem;}
+  .status-box.warn{border-color:var(--warn);}
+  .status-box.ok{border-color:var(--teal);}
+  .status-box textarea{width:100%; min-height:120px; margin-top:10px; background:var(--bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:10px; font-family:'IBM Plex Mono',monospace; font-size:.72rem;}
+  .status-box p{margin:0 0 8px;}
+  .bridge-btn-wrap{margin-top:34px;}
+  @media (max-width:640px){
+    .form-card{padding:20px 18px;}
+    .lk span{height:40px;}
+    .panel{padding:40px 18px 36px;}
   }
 </style>
 </head>
@@ -184,11 +243,61 @@
   <div class="wrap">
     <div class="hud-brand" aria-hidden="true">🧭</div>
     <div class="hud-mid">
-      <div class="hud-labels"><span id="stepLabel">Activity 1 of 4</span><span>Not graded</span></div>
+      <div class="hud-labels"><span id="stepLabel">Welcome</span><span id="hudRight">Anonymous</span></div>
       <div class="track"><div class="fill" id="progFill"></div></div>
     </div>
   </div>
 </div>
+
+<!-- ===================== STAGE 0: WELCOME + CONSENT ===================== -->
+<div class="stage" id="st-intro">
+  <div class="panel">
+    <div id="intro-main">
+      <span class="eyebrow">MBA project study</span>
+      <h1 class="title">Consumer decisions and <em>AI recommendations</em></h1>
+      <p class="sub">This short study looks at how people react to AI-generated shopping recommendations. It has three steps: a few questions about you, a short interactive simulation, and some questions about two example recommendations.</p>
+      <div class="pill-row">
+        <span class="info-pill">⏱ about 10 minutes</span>
+        <span class="info-pill">🕶 anonymous</span>
+        <span class="info-pill">🎓 academic use only</span>
+      </div>
+      <div class="form-card">
+        <p style="margin:0 0 14px">Taking part is voluntary and anonymous — we don't ask for your name or email. Your answers are stored in a private Google Sheet that only the researcher can open, and are used only for academic purposes. Nothing is saved until you press Submit at the end, so you can stop at any time by closing this page.</p>
+        <div class="q" data-name="consent_box" id="consent-q">
+          <label class="consent-row"><input type="checkbox" id="consent"><span>I have read the information above and agree to take part.</span></label>
+        </div>
+        <div class="q" data-name="screen" id="screen-q" style="margin-top:22px">
+          <p class="q-label">Have you shopped online in the past 6 months?</p>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="screen" value="Yes"><span>Yes</span></label>
+            <label class="choice"><input type="radio" name="screen" value="No"><span>No</span></label>
+          </div>
+        </div>
+        <p class="form-err" id="intro-err">Please tick the box and answer the question to continue.</p>
+        <button class="next-btn" id="intro-start">Start →</button>
+        <p class="researcher" id="researcherLine"></p>
+      </div>
+    </div>
+    <div id="screenout" class="hidden">
+      <h2 class="panel-title">Thank you for your interest</h2>
+      <p class="sub">This study is for people who have shopped online in the past 6 months, so we can't include your answers. You're welcome to close this page.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== STAGE 1: ABOUT YOU ===================== -->
+<div class="stage hidden" id="st-about">
+  <div class="panel">
+    <span class="eyebrow">Step 1 of 3</span>
+    <h2 class="panel-title">About you</h2>
+    <div id="about-body"></div>
+    <p class="form-err" id="about-err">Please answer the highlighted questions.</p>
+    <button class="next-btn" id="about-next">Continue to the simulation →</button>
+  </div>
+</div>
+
+<!-- ===================== STAGE 2: SIMULATION ===================== -->
+<div class="stage hidden" id="st-sim">
 
 <div class="questmap">
   <div class="wrap questmap-row" id="questmap">
@@ -201,13 +310,13 @@
 
 <header class="hero">
   <div class="wrap">
-    <span class="eyebrow">AI Literacy Simulation</span>
+    <span class="eyebrow">Step 2 of 3 · AI literacy simulation</span>
     <h1 class="title">Four short activities. One skill: <em>calibrated trust.</em></h1>
-    <p class="sub">You'll practise telling AI-written content from human-written content, and decide when an AI's suggestion deserves a second look. This is a learning activity, not a test — there are no scores and no right or wrong answers. Go with your instinct; each step ends with a short explanation.</p>
+    <p class="sub">You'll practise telling AI-written content from human-written content, and decide when an AI's suggestion deserves a second look. This part is a learning activity, not a test — no scores, no right or wrong answers, and nothing you tap in these four activities is stored. Go with your instinct; each step ends with a short explanation.</p>
     <div class="pill-row">
-      <span class="info-pill">⏱ about 7 minutes</span>
+      <span class="info-pill">⏱ about 4 minutes</span>
       <span class="info-pill">🚫 not graded</span>
-      <span class="info-pill">🔒 nothing you tap is stored</span>
+      <span class="info-pill">🔒 activity taps not stored</span>
     </div>
   </div>
 </header>
@@ -218,7 +327,7 @@
     <div class="level-head">
       <span class="kicker mono">Activity 1 · Awareness</span>
       <h2>Spot the Machine</h2>
-      <p>Six messages. Was each one written by a human, or generated by AI? Make your best guess — then see what gave it away.</p>
+      <p>Four messages. Was each one written by a human, or generated by AI? Make your best guess — then see what gave it away.</p>
     </div>
     <div class="progress-dots" id="dots-1"></div>
     <div class="game-card" id="card-1" aria-live="polite"></div>
@@ -268,7 +377,7 @@
     <div class="level-head">
       <span class="kicker mono">Activity 3 · Verification</span>
       <h2>Act or Check First?</h2>
-      <p>Five everyday scenarios. Would you act on the AI's suggestion right away, or check it first? Choose what you would actually do — then compare it with a useful rule of thumb.</p>
+      <p>Three everyday scenarios. Would you act on the AI's suggestion right away, or check it first? Choose what you would actually do — then compare it with a useful rule of thumb.</p>
     </div>
     <div class="progress-dots" id="dots-3"></div>
     <div class="game-card" id="card-3" aria-live="polite"></div>
@@ -282,7 +391,7 @@
     <div class="level-head">
       <span class="kicker mono">Activity 4 · Putting it together</span>
       <h2>Myth or Fact?</h2>
-      <p>Five statements about what AI can and can't do. Pick one for each — then read the short explanation.</p>
+      <p>Three statements about what AI can and can't do. Pick one for each — then read the short explanation.</p>
     </div>
     <div class="progress-dots" id="dots-4"></div>
     <div class="game-card" id="card-4" aria-live="polite"></div>
@@ -293,18 +402,13 @@
   <div class="wrap">
     <div class="done-icon" aria-hidden="true">✓</div>
     <h2>Simulation complete</h2>
-    <p class="done-sub">Thank you. Nothing here was scored — this was a learning activity. Here are three things to keep in mind as you continue the survey:</p>
+    <p class="done-sub">Thank you. Nothing in the activities was scored. Here are three things to keep in mind for the last questions:</p>
     <div class="takeaways">
       <div class="takeaway"><span class="tn">01</span><span>AI-generated text is often hard to tell apart from human writing, so instinct alone isn't a reliable guide.</span></div>
       <div class="takeaway"><span class="tn">02</span><span>Utilitarian decisions (prices, specs, logistics) are easy to check; hedonic decisions (gifts, taste, occasions) depend on you, not on a fact an AI can look up.</span></div>
       <div class="takeaway"><span class="tn">03</span><span>The more subjective or high-stakes a decision is, the more it pays to check an AI's suggestion before acting on it.</span></div>
     </div>
-    <div class="code-card">
-      <div class="code-label">Your completion code</div>
-      <div class="code-box mono" id="codeBox"></div>
-      <button class="copy-btn" id="copyBtn">Copy code</button>
-      <p class="code-help">Go back to the survey tab and paste this code into the next question to continue.</p>
-    </div>
+    <div class="bridge-btn-wrap"><button class="next-btn" id="continue-survey">Continue to the last questions →</button></div>
   </div>
 </section>
 
@@ -313,20 +417,57 @@
     <p>Scenarios are informed by research on algorithm aversion and appreciation, the hedonic–utilitarian distinction, and AI-literacy scales. Calibrated trust — not blind trust or blind doubt — is the goal.</p>
   </div>
 </footer>
+</div><!-- /st-sim -->
+
+<!-- ===================== STAGE 3: YOUR VIEWS ===================== -->
+<div class="stage hidden" id="st-survey">
+  <div class="panel">
+    <div id="survey-body"></div>
+    <p class="form-err" id="sv-err">Please answer the highlighted questions.</p>
+    <button class="next-btn" id="sv-next">Continue →</button>
+  </div>
+</div>
+
+<!-- ===================== STAGE 4: DONE ===================== -->
+<div class="stage hidden" id="st-done">
+  <div class="panel">
+    <div class="done-icon" aria-hidden="true">✓</div>
+    <h2 class="panel-title" style="text-align:center">Thank you!</h2>
+    <p class="sub" style="text-align:center; margin-left:auto; margin-right:auto" id="done-msg">Saving your answers…</p>
+    <div id="status-area"></div>
+  </div>
+</div>
 
 <script>
 /* ---------- CONFIG ----------
-   Change this code if you like, and update the Google Form's
-   response validation for the completion-code question to match. */
-const COMPLETION_CODE = 'CALIB-4729';
+   Recommended: run this page from Google Apps Script (see SETUP). It then saves straight into your Google Sheet
+   and ENDPOINT can stay empty.
+   Only if you host the page somewhere else (e.g. Vercel): paste your Apps Script web-app URL into ENDPOINT.
+   Opened any other way, the page runs in TEST MODE: everything works but nothing is saved. */
+const ENDPOINT = '';
+const RESEARCHER_NAME = 'Jaisingh Bhandari';
+const INSTITUTE = 'Faculty of Management Studies, University of Delhi';
+const CONTACT_EMAIL = 'Jaisingh.n27@fms.edu';
 const TOTAL_ACTIVITIES = 4;
 
 let doneCount = 0;
+const T = {start: Date.now(), simStart: null, simEnd: null};
 
-function updateProgress(){
-  const label = doneCount >= TOTAL_ACTIVITIES ? 'Complete' : 'Activity ' + (doneCount + 1) + ' of ' + TOTAL_ACTIVITIES;
+function setHud(label, right, pct){
   document.getElementById('stepLabel').textContent = label;
-  document.getElementById('progFill').style.width = (doneCount / TOTAL_ACTIVITIES * 100) + '%';
+  document.getElementById('hudRight').textContent = right;
+  document.getElementById('progFill').style.width = pct + '%';
+}
+function showStage(id){
+  document.querySelectorAll('.stage').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+function updateProgress(){   // simulation progress (30% of the bar)
+  const label = doneCount >= TOTAL_ACTIVITIES
+    ? 'Step 2 of 3 · Simulation complete'
+    : 'Step 2 of 3 · Simulation · ' + (doneCount + 1) + ' of ' + TOTAL_ACTIVITIES;
+  setHud(label, 'Not graded', 25 + (doneCount / TOTAL_ACTIVITIES) * 35);
 }
 
 function unlockLevel(id){
@@ -418,8 +559,6 @@ const level1Items = [
   {prompt:"“lol i can't believe you actually tried that recipe, how'd it turn out?”", options:[HUMAN,AI], reference:'human', explanation:"Specific shared history (a recipe you both know about) is a strong human signal — AI has no memory of a real shared moment unless told."},
   {prompt:"“Great question! Let me break this down step by step for you 😊”", options:[HUMAN,AI], reference:'ai', explanation:"This upbeat, structured, step-by-step framing is a classic AI-assistant pattern."},
   {prompt:"“I stayed up last night thinking about what you said. Are you doing okay?”", options:[HUMAN,AI], reference:'human', explanation:"Genuine follow-through on a real prior conversation — this reflects actual memory of a relationship, not a generated response."},
-  {prompt:"“Customers who bought this also bought: wireless earbuds, phone case, screen protector.”", options:[HUMAN,AI], reference:'ai', explanation:"Classic collaborative-filtering recommendation output — pattern-matched from purchase data."},
-  {prompt:"“Ugh, Monday again. Coffee's not hitting the same today.”", options:[HUMAN,AI], reference:'human', explanation:"Mundane, unprompted venting about a personal daily feeling — low incentive for a system to generate this unprompted."}
 ];
 
 /* ---------- ACTIVITY 3 DATA ---------- */
@@ -427,8 +566,6 @@ const ACT = {label:'✅ Act on it', value:'act'}, CHECK = {label:'🔍 Check it 
 const level3Items = [
   {kicker:'Scenario', prompt:"AI says this exact laptop model is ₹12,000 cheaper on another site.", options:[ACT,CHECK], reference:'act', explanation:"Fully verifiable and low in emotional stake — one click confirms it, so acting directly is efficient."},
   {kicker:'Scenario', prompt:"AI suggests: 'Write a heartfelt anniversary message for your spouse.'", options:[ACT,CHECK], reference:'check', explanation:"Hedonic and personal — the AI doesn't know your relationship's real texture. Use it as a draft and personalise it before sending."},
-  {kicker:'Scenario', prompt:"AI flags a transaction on your card as 'likely fraud.'", options:[ACT,CHECK], reference:'check', explanation:"High stakes, and the action can be hard to undo — check your statement and the merchant before disputing or blocking."},
-  {kicker:'Scenario', prompt:"AI recommends the fastest driving route home based on live traffic.", options:[ACT,CHECK], reference:'act', explanation:"Objective, data-driven, and low downside if slightly off. This is exactly what these systems are built for."},
   {kicker:'Scenario', prompt:"AI recommends a stock to invest your savings in.", options:[ACT,CHECK], reference:'check', explanation:"High stakes, hard to reverse, and outside what a language model can reliably know about future markets. Check with a qualified advisor."}
 ];
 
@@ -437,8 +574,6 @@ const FACT = {label:'Fact', value:'fact'}, MYTH = {label:'Myth', value:'myth'};
 const level4Items = [
   {kicker:'Myth or Fact', prompt:"Generative AI actually 'feels' happy when it writes a cheerful message.", options:[FACT,MYTH], reference:'myth', explanation:"It reproduces the pattern of a cheerful tone from its training data — there's no underlying emotion."},
   {kicker:'Myth or Fact', prompt:"AI recommendations for objective facts (prices, specs) are generally more reliable than for personal taste.", options:[FACT,MYTH], reference:'fact', explanation:"This is a core idea behind algorithm aversion research: trust is easier to earn in utilitarian tasks and more contested in hedonic ones."},
-  {kicker:'Myth or Fact', prompt:"Labelling content as 'AI-generated' can lower how much people value it, even when the content is identical.", options:[FACT,MYTH], reference:'fact', explanation:"Sometimes called the 'algorithm discount' — people may discount perceived effort and authenticity once AI authorship is disclosed."},
-  {kicker:'Myth or Fact', prompt:"The more 'AI literate' someone is, the more they trust AI in absolutely every situation.", options:[FACT,MYTH], reference:'myth', explanation:"Literacy calibrates trust — it can go up for verifiable tasks and down for tasks that need real empathy, rather than rising everywhere."},
   {kicker:'Myth or Fact', prompt:"It's always obvious when a message was written by AI rather than a human.", options:[FACT,MYTH], reference:'myth', explanation:"As Activity 1 may have shown, it's often genuinely hard to tell — which is exactly why literacy matters more than instinct."}
 ];
 
@@ -589,24 +724,11 @@ function completeLevel4(){
 }
 
 function showResults(){
-  document.getElementById('codeBox').textContent = COMPLETION_CODE;
+  T.simEnd = Date.now();
   const res = document.getElementById('results');
   res.classList.add('show');
   setTimeout(()=>res.scrollIntoView({behavior:'smooth', block:'start'}), 200);
 }
-
-document.getElementById('copyBtn').addEventListener('click', ()=>{
-  const btn = document.getElementById('copyBtn');
-  const done = ()=>{ btn.textContent = 'Copied ✓'; setTimeout(()=>btn.textContent='Copy code', 2200); };
-  try{
-    navigator.clipboard.writeText(COMPLETION_CODE).then(done, ()=>{ selectCode(); });
-  }catch(e){ selectCode(); }
-  function selectCode(){
-    const r = document.createRange(); r.selectNodeContents(document.getElementById('codeBox'));
-    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
-    btn.textContent = 'Press Ctrl/Cmd + C';
-  }
-});
 
 /* ---------- ACTIVITY-SPECIFIC REVEAL COPY ---------- */
 const cfg1 = {
@@ -622,8 +744,333 @@ const cfg4 = {
   nudge: "A common assumption — many people guess differently."
 };
 
+/* =====================================================================
+   STUDY FLOW: welcome → About you → simulation → questions → submit
+   ===================================================================== */
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const AGREE_LEGEND = '1 = Strongly disagree · 4 = Neutral · 7 = Strongly agree';
+
+const ABOUT = [
+  {id:'age_group', type:'single', label:'Age group', options:['18–24','25–34','35–44','45–54','55+']},
+  {id:'gender', type:'single', label:'Gender', options:['Female','Male','Prefer not to say','Other']},
+  {id:'education', type:'single', label:'Highest education level', options:['Undergraduate','Postgraduate','Doctorate','Other']},
+  {id:'used_before', type:'multi', label:'Which of these have you used while shopping online?', hint:'Select all that apply.', exclusive:'None of these',
+   options:['An AI chatbot or shopping assistant','AI product recommendations','AI-written product descriptions or review summaries','None of these']},
+  {id:'ai_use_freq', type:'single', label:'How often do you use AI chatbots such as ChatGPT or Gemini, for any purpose?', options:['Daily','Weekly','Monthly','Rarely','Never']},
+  {id:'shop_freq', type:'single', label:'How often do you shop online?', options:['Daily','Weekly','Monthly','Rarely','Never']}
+];
+const MAILS = [
+  'I have a reasonable understanding of how AI systems like chatbots or recommendation engines work.',
+  'I can usually tell when I am interacting with an AI system rather than a human.',
+  'I feel confident using AI tools to help with everyday tasks.',
+  'I think critically about a recommendation or answer an AI gives me, rather than accepting it automatically.',
+  'I am aware that AI systems can make mistakes or be biased.',
+  'I know how to phrase a request to get a better response from an AI tool.',
+  'I understand that AI does not have real emotions, even when its responses sound warm or empathetic.',
+  'I consider the ethical implications (privacy, fairness) of using AI tools.',
+  'I stay calm and rational when an AI gives me an unexpected or wrong answer.',
+  'I am interested in learning more about how AI systems work.'
+].map((t,i)=>({id:'mails_'+(i+1), type:'likert', label:t}));
+
+const SCEN = {
+  plan:{title:'Mobile plan',
+        context:'You need to renew your mobile plan and want to keep your monthly cost low. While comparing plans online, you see this suggestion:',
+        rec:'The ₹399 plan (2 GB/day, 28 days, unlimited calls) is your best-value option — ₹150 cheaper per month than your current plan.'},
+  gift:{title:'Birthday gift',
+        context:'It is the birthday of someone very close to you, and you want a gift that feels truly special. While browsing an online store, you see this suggestion:',
+        rec:'A personalised leather journal with their initials engraved — thoughtful, timeless, and sure to feel special.'}
+};
+
+// Step 1 (before the AI disclosure)
+const STEP_A = [
+  {id:'ai_origin', type:'scale', label:'How likely is it that this recommendation was written by an AI rather than by a person?',
+   low:'Almost certainly a person', high:'Almost certainly an AI'}
+];
+// Steps 2–4 (after the AI disclosure)
+const STEP_B = [
+  {title:'How does this decision feel?', legend:'Pick the point between the two words that fits best.', items:[
+    {id:'felt_fun', type:'sd', label:'This decision feels…', low:'Not fun', high:'Fun'},
+    {id:'felt_practical', type:'sd', label:'This decision feels…', low:'Impractical', high:'Practical'}
+  ]},
+  {title:'Your view of the recommendation', legend:AGREE_LEGEND, items:[
+    {id:'verif_facts', type:'likert', label:'Whether this recommendation is right could be checked against facts (prices, features, reviews).'},
+    {id:'trust_ability', type:'likert', label:'I believe this recommendation reflects a good understanding of what I need.'},
+    {id:'trust_rely', type:'likert', label:'I would be willing to rely on this recommendation when making my decision.'},
+    {id:'verify_act_without_check', type:'likert', label:'I would act on this recommendation without checking it against another source.'},
+    {id:'verify_want_to_verify', type:'likert', label:'Before trusting this recommendation, I would want to verify it myself.'}
+  ]},
+  {title:null, items:[
+    {id:'verify_behaviour', type:'single', stack:true, label:'If you saw this recommendation in real life, what would you do next?',
+     options:['Act on it right away','Quickly check one other source','Compare several sources','Ask someone I trust','Not follow it']}
+  ]},
+  {title:'Your experience and intentions', legend:AGREE_LEGEND, items:[
+    {id:'sat_overall', type:'likert', label:'Overall, I am satisfied with this recommendation experience.'},
+    {id:'sat_pleasant', type:'likert', label:'My experience with this AI recommendation was a pleasant one.'},
+    {id:'pi_consider', type:'likert', label:'I would consider going with this recommendation.'},
+    {id:'pi_likely', type:'likert', label:'The likelihood that I would purchase based on this recommendation is high.'}
+  ]}
+];
+const OPEN_Q = [
+  {id:'open_trust', type:'text', label:'What made you trust or distrust the AI recommendations shown in this study?'}
+];
+
+/* ---------- rendering ---------- */
+function scaleHtml(name, q){
+  const radios = [1,2,3,4,5,6,7].map(n=>`<label class="lk"><input type="radio" name="${name}" value="${n}"><span>${n}</span></label>`).join('');
+  const ends = q.type === 'likert' ? '' : `<div class="lk-ends"><span>${esc(q.low)}</span><span>${esc(q.high)}</span></div>`;
+  return `<div class="lk-scale">${radios}</div>${ends}`;
+}
+function qHtml(q, prefix){
+  const name = prefix + q.id;
+  const req = q.type === 'text' ? '' : ' data-req="1"';
+  let body = '';
+  if(q.type === 'single' || q.type === 'multi'){
+    const t = q.type === 'single' ? 'radio' : 'checkbox';
+    body = `<div class="choices${q.stack ? ' stack' : ''}">` +
+      q.options.map(o=>`<label class="choice"><input type="${t}" name="${name}" value="${esc(o)}"><span>${esc(o)}</span></label>`).join('') + '</div>';
+  } else if(q.type === 'text'){
+    body = `<textarea class="txt" name="${name}" rows="3" maxlength="1500" placeholder="Optional — a sentence or two is plenty"></textarea>`;
+  } else {
+    body = scaleHtml(name, q);
+  }
+  const label = q.type === 'likert'
+    ? `<p class="lk-stmt">${esc(q.label)}</p>`
+    : `<p class="q-label">${esc(q.label)}${q.hint ? `<span class="step-hint">${esc(q.hint)}</span>` : ''}</p>`;
+  return `<div class="q" data-name="${name}" data-type="${q.type}"${req}>${label}${body}<p class="q-err">Please answer this question.</p></div>`;
+}
+function cardHtml(title, legend, items, prefix){
+  return `<div class="form-card">${title ? `<h3 class="block-title">${esc(title)}</h3>` : ''}` +
+         `${legend ? `<div class="lk-legend">${esc(legend)}</div>` : ''}` +
+         items.map(q=>qHtml(q, prefix)).join('') + '</div>';
+}
+
+/* ---------- collecting + validating ---------- */
+function collect(root){
+  const out = {}, missing = [];
+  root.querySelectorAll('.q').forEach(q=>{
+    const name = q.dataset.name, type = q.dataset.type;
+    let val = null;
+    if(type === 'multi'){
+      val = [...q.querySelectorAll('input:checked')].map(i=>i.value).join(' | ');
+    } else if(type === 'text'){
+      val = q.querySelector('textarea').value.trim();
+    } else {
+      const c = q.querySelector('input:checked');
+      if(c) val = (type === 'likert' || type === 'scale' || type === 'sd') ? parseInt(c.value, 10) : c.value;
+    }
+    const answered = type === 'text' ? true : (val !== null && val !== '');
+    const bad = q.hasAttribute('data-req') && !answered;
+    q.classList.toggle('missing', bad);
+    if(bad) missing.push(q);
+    out[name] = val === null ? '' : val;
+  });
+  return {out, missing};
+}
+function wireClearOnChange(root){
+  root.addEventListener('change', e=>{
+    const q = e.target.closest('.q'); if(q) q.classList.remove('missing');
+  });
+}
+function wireExclusive(root, name, exclusiveValue){
+  root.querySelectorAll(`input[name="${name}"]`).forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      if(!inp.checked) return;
+      root.querySelectorAll(`input[name="${name}"]`).forEach(o=>{
+        if(o !== inp && ((inp.value === exclusiveValue) || (o.value === exclusiveValue))) o.checked = false;
+      });
+    });
+  });
+}
+function showError(id, missing){
+  const el = document.getElementById(id);
+  el.classList.toggle('show', missing.length > 0);
+  if(missing.length) missing[0].scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* ---------- state ---------- */
+const R = {about:{}, survey:{}, order:null};
+const PARTICIPANT_ID = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+  : 'p-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+
+/* ---------- stage 0: welcome ---------- */
+document.getElementById('researcherLine').textContent = RESEARCHER_NAME + ' · ' + INSTITUTE + ' · ' + CONTACT_EMAIL;
+wireClearOnChange(document.getElementById('st-intro'));
+document.getElementById('intro-start').addEventListener('click', ()=>{
+  const consent = document.getElementById('consent').checked;
+  const scr = document.querySelector('input[name="screen"]:checked');
+  document.getElementById('consent-q').classList.toggle('missing', !consent);
+  document.getElementById('screen-q').classList.toggle('missing', !scr);
+  document.getElementById('intro-err').classList.toggle('show', !consent || !scr);
+  if(!consent || !scr) return;
+  if(scr.value === 'No'){
+    document.getElementById('intro-main').classList.add('hidden');
+    document.getElementById('screenout').classList.remove('hidden');
+    setHud('Thank you', 'Anonymous', 0);
+    return;
+  }
+  startAbout();
+});
+document.getElementById('consent').addEventListener('change', ()=>document.getElementById('consent-q').classList.remove('missing'));
+
+/* ---------- stage 1: about you ---------- */
+function startAbout(){
+  const body = document.getElementById('about-body');
+  body.innerHTML =
+    cardHtml('A little about you', null, ABOUT, '') +
+    cardHtml('Your experience with AI', AGREE_LEGEND, MAILS, '');
+  wireClearOnChange(body);
+  wireExclusive(body, 'used_before', 'None of these');
+  showStage('st-about');
+  setHud('Step 1 of 3 · About you', 'No right or wrong answers', 8);
+}
+document.getElementById('about-next').addEventListener('click', ()=>{
+  const {out, missing} = collect(document.getElementById('about-body'));
+  showError('about-err', missing);
+  if(missing.length) return;
+  R.about = out;
+  showStage('st-sim');
+  T.simStart = Date.now();
+  updateProgress();
+});
+
+/* ---------- stage 3: the questions ---------- */
+let SV = {panels:[], idx:0};
+document.getElementById('continue-survey').addEventListener('click', ()=>{
+  R.order = Math.random() < 0.5 ? ['plan','gift'] : ['gift','plan'];   // random scenario order (counterbalancing)
+  const [a, b] = R.order;
+  SV = {idx:0, panels:[
+    {kind:'A', tag:a, n:1}, {kind:'B', tag:a, n:1},
+    {kind:'A', tag:b, n:2}, {kind:'B', tag:b, n:2},
+    {kind:'OPEN'}
+  ]};
+  showStage('st-survey');
+  renderPanel();
+});
+
+function recCard(s, neutral){
+  return `<div class="ai-bubble${neutral ? ' neutral' : ''}"><span class="ai-tag">${neutral ? '💬 The suggestion you see' : '🤖 The AI assistant suggested'}</span><p>“${esc(s.rec)}”</p></div>`;
+}
+function renderPanel(){
+  const p = SV.panels[SV.idx];
+  const body = document.getElementById('survey-body');
+  const last = SV.idx === SV.panels.length - 1;
+  setHud(`Step 3 of 3 · Your views · ${SV.idx + 1} of ${SV.panels.length}`, 'Anonymous', 60 + (SV.idx / SV.panels.length) * 40);
+  let html = '';
+  if(p.kind === 'A'){
+    const s = SCEN[p.tag];
+    html = `<span class="eyebrow">Scenario ${p.n} of 2</span><h2 class="panel-title">${esc(s.title)}</h2>` +
+           `<div class="form-card"><p style="margin:0">${esc(s.context)}</p>${recCard(s, true)}</div>` +
+           cardHtml(null, null, STEP_A, p.tag + '_');
+  } else if(p.kind === 'B'){
+    const s = SCEN[p.tag];
+    html = `<span class="eyebrow">Scenario ${p.n} of 2</span><h2 class="panel-title">${esc(s.title)}</h2>` +
+           `<div class="reveal-banner">🤖 <strong>Note:</strong> this recommendation was generated by an AI shopping assistant. The next questions are about this recommendation.</div>` +
+           `<div class="form-card">${recCard(s, false)}</div>` +
+           STEP_B.map(b=>cardHtml(b.title, b.legend, b.items, p.tag + '_')).join('');
+  } else {
+    html = `<span class="eyebrow">Almost done</span><h2 class="panel-title">One last question</h2>` + cardHtml(null, null, OPEN_Q, '');
+  }
+  body.innerHTML = html;
+  wireClearOnChange(body);
+  document.getElementById('sv-err').classList.remove('show');
+  document.getElementById('sv-next').textContent = last ? 'Submit my answers' : 'Continue →';
+  window.scrollTo(0, 0);
+}
+document.getElementById('sv-next').addEventListener('click', ()=>{
+  const {out, missing} = collect(document.getElementById('survey-body'));
+  showError('sv-err', missing);
+  if(missing.length) return;
+  Object.assign(R.survey, out);
+  if(SV.idx === SV.panels.length - 1){ submitAll(); return; }
+  SV.idx++;
+  renderPanel();
+});
+
+/* ---------- submitting ---------- */
+function fieldOrder(){
+  const f = ['participant_id','submitted_at','order','duration_sec','sim_seconds','screen_width','sim_completed'];
+  ABOUT.forEach(q=>f.push(q.id));
+  MAILS.forEach(q=>f.push(q.id));
+  ['plan','gift'].forEach(t=>{
+    STEP_A.forEach(q=>f.push(t + '_' + q.id));
+    STEP_B.forEach(b=>b.items.forEach(q=>f.push(t + '_' + q.id)));
+  });
+  OPEN_Q.forEach(q=>f.push(q.id));
+  return f;
+}
+function buildPayload(){
+  const now = Date.now();
+  const all = Object.assign({
+    participant_id: PARTICIPANT_ID,
+    submitted_at: new Date(now).toISOString(),
+    order: R.order[0] + '_first',
+    duration_sec: Math.round((now - T.start) / 1000),
+    sim_seconds: (T.simStart && T.simEnd) ? Math.round((T.simEnd - T.simStart) / 1000) : '',
+    screen_width: window.innerWidth,
+    sim_completed: T.simEnd ? 'yes' : 'no'
+  }, R.about, R.survey);
+  const p = {};
+  fieldOrder().forEach(k=>{ p[k] = (all[k] === undefined ? '' : all[k]); });
+  return p;
+}
+const IN_APPS_SCRIPT = typeof google !== 'undefined' && google && google.script && google.script.run;
+function sendViaAppsScript(payload){
+  return new Promise((resolve, reject)=>{
+    const timer = setTimeout(()=>reject(new Error('timeout')), 30000);
+    google.script.run
+      .withSuccessHandler(r=>{
+        clearTimeout(timer);
+        if(r && r.ok) resolve({mode:'saved'});
+        else { const e = new Error((r && r.error) || 'The server did not accept the answers'); e.serverRejected = true; reject(e); }
+      })
+      .withFailureHandler(err=>{ clearTimeout(timer); reject(err instanceof Error ? err : new Error(String(err))); })
+      .saveResponse(JSON.stringify(payload));
+  });
+}
+async function sendPayload(payload){
+  if(IN_APPS_SCRIPT) return sendViaAppsScript(payload);
+  if(!ENDPOINT) return {mode:'test'};
+  const init = {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)};
+  try{
+    const res = await fetch(ENDPOINT, init);
+    let j = null; try{ j = await res.json(); }catch(e){}
+    if(res.ok && !(j && j.ok === false)) return {mode:'saved'};
+    const err = new Error('The server did not accept the answers'); err.serverRejected = true; throw err;
+  }catch(e1){
+    if(e1.serverRejected) throw e1;
+    // The browser could not read the reply (cross-origin) or the first attempt failed: send once more without
+    // reading the reply. The backend ignores a repeat of the same participant_id, so this is safe.
+    await fetch(ENDPOINT, Object.assign({}, init, {mode:'no-cors'}));
+    return {mode:'sent'};
+  }
+}
+function statusHtml(kind, html){ return `<div class="status-box ${kind}">${html}</div>`; }
+async function submitAll(){
+  const payload = buildPayload();
+  try{ localStorage.setItem('ai_study_backup', JSON.stringify(payload)); }catch(e){}
+  showStage('st-done');
+  setHud('Complete', 'Thank you', 100);
+  const msg = document.getElementById('done-msg'), area = document.getElementById('status-area');
+  const json = esc(JSON.stringify(payload));
+  msg.textContent = 'Saving your answers…'; area.innerHTML = '';
+  try{
+    const r = await sendPayload(payload);
+    if(r.mode === 'test'){
+      msg.textContent = 'This is a test run.';
+      area.innerHTML = statusHtml('warn', `<p><strong>Test mode — nothing was saved.</strong> This copy of the page is not connected to a Google Sheet, so the answers below stayed in this browser. Open the study through your Apps Script link (see SETUP) to save answers.</p><textarea readonly>${json}</textarea>`);
+    } else {
+      msg.textContent = 'Your answers have been submitted. You can close this page now.';
+    }
+  }catch(e){
+    msg.textContent = 'We could not confirm that your answers were saved.';
+    area.innerHTML = statusHtml('warn', `<p>Please check your internet connection and try again.</p><button class="next-btn" id="retry-btn">Try again</button>` +
+      `<p style="margin-top:14px">Still not working? Copy the text below and email it to ${esc(CONTACT_EMAIL)}.</p><textarea readonly>${json}</textarea>`);
+    document.getElementById('retry-btn').addEventListener('click', submitAll, {once:true});
+  }
+}
+
 /* ---------- INIT ---------- */
-updateProgress();
+setHud('Welcome', 'Anonymous', 0);
 renderSequential('card-1','dots-1', level1Items, completeLevel1, cfg1);
 renderSequential('card-3','dots-3', level3Items, completeLevel3, cfg3);
 </script>
